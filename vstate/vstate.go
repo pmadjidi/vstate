@@ -146,8 +146,11 @@ func (s *State) lessThen20() (State,error) {
 		result = Nothing
 		errorMsg := "Can not change state from : " + s.String() + "\n"
 		err = errors.New(errorMsg)
-	default:
+	case Ready:
 		result,*s = Bounty,Bounty
+	default:
+		result = Nothing
+		err = nil
 	}
 	return result,err
 }

@@ -67,6 +67,9 @@ func (v *Vehicle) listen() {
 						v.stamp()
 						app.store <- v
 					}
+					if (v.Get() == vstate.Battery_low) {
+						v.Battery = 19
+					}
 				}
 			case <-time.After(10 * time.Second):
 				fmt.Print("Vehicle id: " + v.Uid + " in State: " + v.String() + "  is Alive....\n")

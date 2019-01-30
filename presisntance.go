@@ -48,7 +48,7 @@ func clearTable() {
 func SaveVehicle(v Vehicle) {
 	statement, err := app.DB.Prepare("INSERT INTO vehicles (Uid,State, Battery,CreatedAt,UpdatedAt) VALUES (?,?,?,?,?)")
 	if (err != nil) {
-		log.Print(err)
+		log.Print(err.Error())
 		return
 	} else {
 		_, err := statement.Exec(v.Uid,v.Get(), v.ChargeLevel(), v.CreatedAt, v.UpdatedAt)
@@ -61,7 +61,7 @@ func SaveVehicle(v Vehicle) {
 func DeleteVehicle(v Vehicle) {
 	statement, err := app.DB.Prepare("DELETE  FROM vehicles where Uid = (Uid) VALUES (?)")
 	if (err != nil) {
-		log.Print(err)
+		log.Print(".............." + err.Error())
 		return
 	} else {
 		_, err := statement.Exec(v.Uid)
@@ -114,12 +114,12 @@ func init() {
 		for {
 			select {
 			case v := <-app.store:
-				fmt.Print("Presisting Vehicle id: ",v.Uid + "\n")
+				fmt.Print("\n Presisting Vehicle id: ",v.Uid + "\n")
 				SaveVehicle(*v);
 			case v := <-app.delete:
-				fmt.Print("Deleting Vehicle id: ",v.Uid + "\n")
+				fmt.Print("\n Deleting Vehicle id: ",v.Uid + "\n")
 				DeleteVehicle(*v);
-				fmt.Print("Removing Vehicle id: ",v.Uid + "from Garage....\n")
+				fmt.Print("\n Removing Vehicle id: ",v.Uid + "from Garage....\n")
 				app.garage.Delete(v.Uid)
 			case <-app.quit:
 				break
