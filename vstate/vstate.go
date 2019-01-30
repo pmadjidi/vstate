@@ -10,6 +10,7 @@ import (
 
 func ValidState(s string) (State,bool) {
 	for i := Init; i <= Nothing; i++  {
+		fmt.Printf("%s,%s\n",i.String(),s)
 		if i.String() == s  {
 			return i,true
 		}
@@ -54,7 +55,7 @@ func (s *State) Set(newState State,role URoles) (State,error) {
 
 
 
-func (s *State) Next(newEvent Event,role URoles) (State, error) {
+func (s *State) Next(newEvent Event,role URoles, state ... State) (State, error) {
 	var result State
 	var err error = nil
 	if (newEvent < Claim || newEvent > Hours48) {
@@ -75,6 +76,8 @@ func (s *State) Next(newEvent Event,role URoles) (State, error) {
 		result,err = s.lessThen20()
 	case Hours48:
 		result,err = s.hours48()
+	case SetState:
+		result,err = s.Set(state[0],role)
 	default:
 		result = Nothing
 		err = errors.New("Next: Unkown Event")
@@ -98,6 +101,14 @@ func (s *State) claim(role URoles) (State,error){
 		} else {
 			result = Nothing
 			errorMsg := "Claim: Only Hunter can claim vehicle in state: " + s.String() + "\n"
+			err = errors.New(errorMsg)
+		}
+	case Init:
+		if ( role == Admins) {
+			result,*s = Riding,Riding
+		} else {
+			result = Nothing
+			errorMsg := "Claim: Only Admins can claim vehicle in state: " + s.String() + "\n"
 			err = errors.New(errorMsg)
 		}
 	default:
@@ -231,11 +242,6 @@ func (s *State) nineThirtyPm(role URoles) (State,error){
 	}
 	return result,err
 }
-
-
-
-
-
 
 
 

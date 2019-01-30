@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 )
 import "github.com/segmentio/ksuid"
 
@@ -15,5 +17,16 @@ func uniqueId() string {
 func exit(err error) {
 	log.Fatal(err)
 	close(app.quit)
+}
+
+func wraphtml(s string,h int) string {
+	s = strings.TrimSuffix(s, "\n")
+	res :=  "<h" + strconv.Itoa(h) + ">" + s + "</>"
+	fmt.Print(res)
+	return  res
+}
+
+func out(s string,size int) []byte {
+	return []byte(wraphtml(s,size))
 }
 

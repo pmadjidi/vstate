@@ -4,14 +4,14 @@ type Event int
 
 
 const (
-	Claim Event = iota
+	Claim Event = iota // always first
 	DisClaim
 	Hunter
 	Dropp
 	NineThirtyPm
 	LessThen20
-    Hours48
 	SetState
+    Hours48 //always last
 )
 
 

@@ -50,7 +50,7 @@ func (v *Vehicle) listen() {
 			case r := <-v.Port:
 				fmt.Print( "Id: " + v.Uid + "in State: " + r.event.Name())
 				oldState := v.Get()
-				res, err := v.Next(r.event, r.userRole)
+				res, err := v.Next(r.event, r.userRole,r.state)
 				if (err != nil) {
 					fmt.Print("Error: ", v.Id, err)
 					res := &Response{v.Get(),err}
