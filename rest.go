@@ -58,11 +58,10 @@ func (a *App) setState(w http.ResponseWriter, r *http.Request) {
 	id := args["id"]
 	state := args["state"]
 	switch(state) {
-	case: ""
+	case "":
 	}
 	v, ok := app.garage.getVehicleById(id)
 	if (ok) {
-		v.Set()
 		w.WriteHeader(http.StatusOK)
 		b, err := json.Marshal(v)
 		if (err == nil) {

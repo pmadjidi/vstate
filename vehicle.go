@@ -56,7 +56,7 @@ func (v *Vehicle) listen() {
 				} else {
 					if (oldState != res.Get()) {
 						v.stamp()
-						SaveVehicle(*v);
+						app.store <- v
 					}
 				}
 			case <-time.After(10 * time.Second):

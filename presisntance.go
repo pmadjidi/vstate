@@ -26,7 +26,7 @@ func createTable() {
 		Id INTEGER PRIMARY KEY AUTOINCREMENT,
 		Uid TEXT NOT NULL,
 		State TEXT,
-		Battery NUMBER,
+		Battery INTEGER,
 		CreatedAt TEXT ,
 		UpdatedAt TEXT
 	);
@@ -45,7 +45,6 @@ func clearTable() {
 }
 
 func SaveVehicle(v Vehicle) {
-	v.print()
 	statement, err := app.DB.Prepare("INSERT INTO vehicles (Uid,State, Battery,CreatedAt,UpdatedAt) VALUES (?,?,?,?,?)")
 	if (err != nil) {
 		log.Print(err)
@@ -58,10 +57,43 @@ func SaveVehicle(v Vehicle) {
 	}
 }
 
+
+
+func RestoreVehiclesFromDB() {
+	rows, err := app.DB.Query("SELECT * FROM vehicles")
+	if (err != nil) {
+		exit(err)
+	}
+	var Id int
+	var Uid string
+	var State uint8
+	var Battery int
+	var createdAt string
+	var updatedAt string
+
+
+	for rows.Next() {
+		err = rows.Scan(&Id, &Uid, &State, &Battery,&createdAt,&updatedAt)
+		if (err != nil) {
+			exit(err)
+		}
+		fmt.Println(Id)
+		fmt.Println(Uid)
+		fmt.Println(State)
+		fmt.Println(Battery)
+		fmt.Println(createdAt)
+		fmt.Println(updatedAt)
+
+	}
+
+	rows.Close() //good habit to close
+}
+
 func init() {
 	fmt.Print("Configuring the database...\n")
 	createdb("./v.db")
 	createTable()
+//	RestoreVehiclesFromDB()
 	go func() {
 		<-app.start
 		for {
