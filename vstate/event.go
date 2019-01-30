@@ -11,23 +11,16 @@ const (
 	NineThirtyPm
 	LessThen20
     Hours48
+	SetState
 )
 
-var eventNames = [...]string{
-	"Claim",
-	"DisClaim",
-	"Hunter",
-	"Dropp",
-	"9.30 pm",
-	"LessThen20",
-	"Hours48",
-}
+
+
 
 
 func (e Event) Name() string {
-	return eventNames[e];
+	return e.String()
 }
-
 
 func (e Event) val() Event {
 	return e;

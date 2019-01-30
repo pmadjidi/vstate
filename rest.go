@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
+	"time"
 	"vehicles/vstate"
 )
 
@@ -56,24 +57,40 @@ func (a *App) setState(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Req: %s %s\n", r.URL.Host, r.URL.Path)
 	args := mux.Vars(r)
 	id := args["id"]
-	state := args["state"]
-	switch(state) {
-	case "":
-	}
-	v, ok := app.garage.getVehicleById(id)
-	if (ok) {
-		w.WriteHeader(http.StatusOK)
-		b, err := json.Marshal(v)
-		if (err == nil) {
-			w.Write(b)
-		} else {
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("<h1>Not Found</>"))
-		}
+	stateName := args["state"]
+	st, ok := vstate.ValidState(stateName)
+	if !ok {
+		w.WriteHeader(http.StatusNotAcceptable)
+		w.Write([]byte("<h1>Not Found</>"))
+	} else {
+		v, ok := app.garage.getVehicleById(id)
+		if (ok) {
+			req := &Request{vstate.SetState, vstate.Admins, st, make(chan *Response)}
+			v.Port <- req
+			var res *Response
+			select {
+			case res = <-req.resp:
+			case <-time.After(5 * time.Second):
+				w.WriteHeader(http.StatusRequestTimeout)
+				w.Write([]byte("<h1>Timeout....</>"))
+				return
+			}
 
+			if (res.err == nil) {
+				w.WriteHeader(http.StatusOK)
+				b, err := json.Marshal(v)
+				if (err == nil) {
+					w.Write(b)
+				} else {
+					w.WriteHeader(http.StatusExpectationFailed)
+					w.Write([]byte(res.err.Error()))
+					return
+				}
+			}
+		}
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("<h1>Not Found</>"))
 	}
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("<h1>OK</>"))
 }
 
 func (a *App) claimVehicle(w http.ResponseWriter, r *http.Request) {
@@ -82,20 +99,36 @@ func (a *App) claimVehicle(w http.ResponseWriter, r *http.Request) {
 	id := args["id"]
 	v, ok := app.garage.getVehicleById(id)
 	if (ok) {
-		v.Port <- Request{vstate.Claim, vstate.Admins}
-		w.WriteHeader(http.StatusOK)
-		b, err := json.Marshal(v)
-		if (err == nil) {
-			w.Write(b)
-		} else {
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("<h1>Not Found</>"))
+		req := &Request{vstate.Claim, vstate.Admins, vstate.Nothing, make(chan *Response)}
+		v.Port <- req
+
+		var res *Response
+		select {
+		case res = <-req.resp:
+		case <-time.After(5 * time.Second):
+			w.WriteHeader(http.StatusRequestTimeout)
+			w.Write([]byte("<h1>Timeout....</>"))
+			return
 		}
 
-	} else {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("<h1>OK</>"))
+		if (res.err == nil) {
+			w.WriteHeader(http.StatusOK)
+			b, err := json.Marshal(v)
+			if (err == nil) {
+				w.Write(b)
+			} else {
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte("<h>Ok...  but no content....</>"))
+				return
+			}
+		} else {
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("<h1>" + res.err.Error() + "</>"))
+			return
+		}
 	}
+	w.WriteHeader(http.StatusNotFound)
+	w.Write([]byte("<h1>Not Found</>"))
 }
 
 func init() {

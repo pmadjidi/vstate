@@ -11,7 +11,7 @@ type Vehicle struct {
 	Id         int  `json:"-"`
 	Uid        string `json:"id"`
 	Battery   int `json:"battery"`
-	Port      chan Request  `json:"-"`
+	Port      chan *Request  `json:"-"`
 	CreatedAt int64 `json:"createdAt"`
 	UpdatedAt int64 `json:"updatedAt"`
 }
@@ -26,7 +26,7 @@ func (v *Vehicle) stamp() vstate.State {
 }
 
 func (v *Vehicle) inState() string {
-	return v.State.Name()
+	return v.State.String()
 }
 
 func (v *Vehicle) lastMod() int64 {
@@ -53,14 +53,18 @@ func (v *Vehicle) listen() {
 				res, err := v.Next(r.event, r.userRole)
 				if (err != nil) {
 					fmt.Print("Error: ", v.Id, err)
+					res := &Response{v.Get(),err}
+					r.resp <- res
 				} else {
 					if (oldState != res.Get()) {
 						v.stamp()
 						app.store <- v
+						res := &Response{v.Get(),nil}
+						r.resp <- res
 					}
 				}
 			case <-time.After(10 * time.Second):
-				fmt.Print( "Vehicle id: " + v.Uid + " in State: " + v.Name() + "  is Alive....\n")
+				fmt.Print( "Vehicle id: " + v.Uid + " in State: " + v.String() + "  is Alive....\n")
 			case <- app.quit:
 				break
 			}
@@ -69,7 +73,7 @@ func (v *Vehicle) listen() {
 }
 
 func NewVehicle() *Vehicle {
-	v := Vehicle{Uid: uniqueId(), Port: make(chan Request), Battery: 100, CreatedAt: time.Now().UnixNano()}
+	v := Vehicle{Uid: uniqueId(), Port: make(chan *Request), Battery: 100, CreatedAt: time.Now().UnixNano()}
 	v.Set(vstate.Init, vstate.System)
 	v.stamp()
 	app.store <- &v

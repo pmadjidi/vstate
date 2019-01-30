@@ -6,35 +6,15 @@ import (
 	"fmt"
 )
 
-type State int
-type Transition int
 
-const (
-	Init State = iota
-	Ready
-	Battery_low
-	Bounty
-	Riding
-	Collected
-	Dropped
-	Service_mode
-	Terminated
-	Unknown
-	DoNothing
-);
 
-var StateNames = [...]string{
-	"Init",
-	"Ready",
-	"Battery Low",
-	"Bounty",
-	"Riding",
-	"Collected",
-	"Dropped",
-	"Service Mode",
-	"Terminated",
-	"Unkonwn",
-	"DoNothing",
+func ValidState(s string) (State,bool) {
+	for i := Init; i <= Nothing; i++  {
+		if i.String() == s  {
+			return i,true
+		}
+	}
+	return  -1,false
 }
 
 
@@ -44,29 +24,28 @@ func (s *State) init() State {
 }
 
 func (s State) Print() {
-	fmt.Print("State is " + s.Name() + "\n")
+	fmt.Print("State is " + s.String() + "\n")
 }
 
-func (s State) Name() string {
-	return StateNames[s]
-}
 
 func (s State) Get() State {
 	return s
 }
 
 
+
+
 func (s *State) Set(newState State,role URoles) (State,error) {
 	var result State
 	var err error = nil
-	if newState < Init || newState > DoNothing {
-		return DoNothing, errors.New("setState: Invalid State as input: " + newState.Name())
+	if newState < Init || newState > Nothing {
+		return Nothing, errors.New("setState: Invalid State as input: " + newState.String())
 	}
 	switch (role) {
 	case Admins,System:
 		result,*s = newState,newState
 	default:
-		result = DoNothing
+		result = Nothing
 		errorMsg := "UnAuthorized\n"
 		err = errors.New(errorMsg)
 	}
@@ -79,7 +58,7 @@ func (s *State) Next(newEvent Event,role URoles) (State, error) {
 	var result State
 	var err error = nil
 	if (newEvent < Claim || newEvent > Hours48) {
-		return DoNothing,errors.New("Next: Invalid Event as input: " + newEvent.Name())
+		return Nothing,errors.New("Next: Invalid Event as input: " + newEvent.Name())
 	}
 	switch(newEvent) {
 	case Claim:
@@ -97,7 +76,7 @@ func (s *State) Next(newEvent Event,role URoles) (State, error) {
 	case Hours48:
 		result,err = s.hours48()
 	default:
-		result = DoNothing
+		result = Nothing
 		err = errors.New("Next: Unkown Event")
 	}
 	if (err == nil) {
@@ -117,13 +96,13 @@ func (s *State) claim(role URoles) (State,error){
 		if ( role == Hunters) {
 			result,*s = Riding,Riding
 		} else {
-			result = DoNothing
-			errorMsg := "Claim: Only Hunter can claim vehicle in state: " + StateNames[*s] + "\n"
+			result = Nothing
+			errorMsg := "Claim: Only Hunter can claim vehicle in state: " + s.String() + "\n"
 			err = errors.New(errorMsg)
 		}
 	default:
-		result = DoNothing
-		errorMsg := "Claim: Can not claim vehicle in state: " + StateNames[*s] + "\n"
+		result = Nothing
+		errorMsg := "Claim: Can not claim vehicle in state: " + s.String() + "\n"
 		err = errors.New(errorMsg)
 	}
 	return result,err
@@ -139,8 +118,8 @@ func (s *State) disClaim() (State,error){
 	case Battery_low:
 		result,*s = Bounty,Bounty
 	default:
-		result = DoNothing
-		errorMsg := "Claim: Can not disclame vehicle in state: " + StateNames[*s] + "\n"
+		result = Nothing
+		errorMsg := "Claim: Can not disclame vehicle in state: " + s.String() + "\n"
 		err = errors.New(errorMsg)
 	}
 	return result,err
@@ -153,8 +132,8 @@ func (s *State) lessThen20() (State,error) {
 	var err error = nil
 	switch (*s) {
 	case Unknown,Terminated,Service_mode:
-		result = DoNothing
-		errorMsg := "Can not change state from : " + StateNames[*s] + "\n"
+		result = Nothing
+		errorMsg := "Can not change state from : " + s.String() + "\n"
 		err = errors.New(errorMsg)
 	default:
 		result,*s = Bounty,Bounty
@@ -174,7 +153,7 @@ func (s *State) hunter(role URoles)(State,error) {
 		if (role == Hunters) {
 			result, *s = Collected, Collected
 		} else {
-			result = DoNothing
+			result = Nothing
 			errorMsg := "Hunter: Can not Collect vehicle in state Bounty if you are not member of Hunters\n"
 			err = errors.New(errorMsg)
 		}
@@ -182,7 +161,7 @@ func (s *State) hunter(role URoles)(State,error) {
 		if (role == Hunters) {
 			result, *s = Dropped, Dropped
 		} else {
-			result = DoNothing
+			result = Nothing
 			errorMsg := "Hunter: Can not drop vehicle in state Collected if you are not member of Hunters\n"
 			err = errors.New(errorMsg)
 		}
@@ -190,13 +169,13 @@ func (s *State) hunter(role URoles)(State,error) {
 		if (role == Hunters) {
 			result, *s = Ready, Ready
 		} else {
-			result = DoNothing
+			result = Nothing
 			errorMsg := "Hunter: Can not return vehicle in state ready if you are not member of Hunters\n"
 			err = errors.New(errorMsg)
 		}
 	default:
-		result = DoNothing
-		errorMsg := "Hunter: Can not Hunt vehicle in state: " + StateNames[*s] + "\n"
+		result = Nothing
+		errorMsg := "Hunter: Can not Hunt vehicle in state: " + s.String() + "\n"
 		err = errors.New(errorMsg)
 	}
 	return result,err
@@ -207,8 +186,8 @@ func (s *State) hours48() (State,error){
 	var err error = nil
 	switch (*s) {
 	case Unknown,Terminated,Service_mode:
-		result = DoNothing
-		errorMsg := "Can not change state from : " + StateNames[*s] + "\n"
+		result = Nothing
+		errorMsg := "Can not change state from : " + s.String() + "\n"
 		err = errors.New(errorMsg)
 	default:
 		result,*s = Unknown,Unknown
@@ -225,13 +204,13 @@ func (s *State) dropp(role URoles) (State,error){
 		if (role == Hunters) {
 			*s,result = Ready,Ready
 		} else {
-			result = DoNothing
-			errorMsg := "Dropp: Can can only be done by Hunters: " + StateNames[*s] + "\n"
+			result = Nothing
+			errorMsg := "Dropp: Can can only be done by Hunters: " + s.String() + "\n"
 			err = errors.New(errorMsg)
 		}
 	default:
-		result = DoNothing
-		errorMsg := "Dropp: Can only be performed  on collected: " + StateNames[*s] + "\n"
+		result = Nothing
+		errorMsg := "Dropp: Can only be performed  on collected: " + s.String() + "\n"
 		err = errors.New(errorMsg)
 
 	}
@@ -244,8 +223,8 @@ func (s *State) nineThirtyPm(role URoles) (State,error){
 	var err error = nil
 	switch (*s) {
 	case Unknown,Terminated,Service_mode:
-		result = DoNothing
-		errorMsg := "Can not change state from : " + StateNames[*s] + "\n"
+		result = Nothing
+		errorMsg := "Can not change state from : " + s.String() + "\n"
 		err = errors.New(errorMsg)
 	default:
 		result,*s = Bounty,Bounty

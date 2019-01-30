@@ -84,12 +84,12 @@ func RestoreVehiclesFromDB() {
 		fmt.Println(battery)
 		fmt.Println(createdAt)
 		fmt.Println(updatedAt)
-		v := Vehicle{Id: id,Uid:uid,State: state,Battery: battery,CreatedAt: createdAt,UpdatedAt: updatedAt,Port: make(chan Request)}
+		v := Vehicle{Id: id,Uid:uid,State: state,Battery: battery,CreatedAt: createdAt,UpdatedAt: updatedAt,Port: make(chan *Request)}
 		app.garage.Set(v.Uid,&v)
 		v.listen()
 	}
 
-	rows.Close() //good habit to close
+	rows.Close()
 }
 
 func init() {
