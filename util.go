@@ -22,7 +22,7 @@ func exit(err error) {
 func wraphtml(s string,h int) string {
 	s = strings.TrimSuffix(s, "\n")
 	res :=  "<h" + strconv.Itoa(h) + ">" + s + "</>"
-	fmt.Print(res)
+	fmt.Print(res + "\n")
 	return  res
 }
 

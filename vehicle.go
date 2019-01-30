@@ -7,13 +7,13 @@ import (
 )
 
 type Vehicle struct {
-	vstate.State  `json:"state"`
-	Id         int  `json:"-"`
-	Uid        string `json:"id"`
-	Battery   int `json:"battery"`
-	Port      chan *Request  `json:"-"`
-	CreatedAt int64 `json:"createdAt"`
-	UpdatedAt int64 `json:"updatedAt"`
+	vstate.State `json:"state"`
+	Id           int           `json:"-"`
+	Uid          string        `json:"id"`
+	Battery      int           `json:"battery"`
+	Port         chan *Request `json:"-"`
+	CreatedAt    int64         `json:"createdAt"`
+	UpdatedAt    int64         `json:"updatedAt"`
 }
 
 func (v *Vehicle) print() {
@@ -42,30 +42,35 @@ func (v *Vehicle) ChargeLevel() int {
 }
 
 func (v *Vehicle) listen() {
-	app.wg.Add(1)
 	go func() {
-		<- app.start
+		<-app.start
 		for {
 			select {
 			case r := <-v.Port:
-				fmt.Print( "Id: " + v.Uid + "in State: " + r.event.Name())
+				if (r.event == vstate.Delete) {
+					res := &Response{vstate.Nothing, nil}
+					r.resp <- res
+					fmt.Print("Terminating event loop for Id: " + v.Uid + "in State: " + r.event.Name())
+					break
+				}
+				fmt.Print("Id: " + v.Uid + "in State: " + r.event.Name())
 				oldState := v.Get()
-				res, err := v.Next(r.event, r.userRole,r.state)
+				nextState, err := v.Next(r.event, r.userRole, r.state)
 				if (err != nil) {
 					fmt.Print("Error: ", v.Id, err)
-					res := &Response{v.Get(),err}
+					res := &Response{v.Get(), err}
 					r.resp <- res
 				} else {
-					if (oldState != res.Get()) {
+					res := &Response{v.Get(), nil}
+					r.resp <- res
+					if (oldState != nextState.Get()) {
 						v.stamp()
 						app.store <- v
-						res := &Response{v.Get(),nil}
-						r.resp <- res
 					}
 				}
 			case <-time.After(10 * time.Second):
-				fmt.Print( "Vehicle id: " + v.Uid + " in State: " + v.String() + "  is Alive....\n")
-			case <- app.quit:
+				fmt.Print("Vehicle id: " + v.Uid + " in State: " + v.String() + "  is Alive....\n")
+			case <-app.quit:
 				break
 			}
 		}

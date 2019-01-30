@@ -11,6 +11,7 @@ const (
 	NineThirtyPm
 	LessThen20
 	SetState
+	Delete
     Hours48 //always last
 )
 
