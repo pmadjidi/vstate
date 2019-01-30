@@ -5,6 +5,7 @@ import (
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
+	"vehicles/vstate"
 )
 
 func createdb(filepath string) {
@@ -25,10 +26,10 @@ func createTable() {
 	CREATE TABLE IF NOT EXISTS vehicles(
 		Id INTEGER PRIMARY KEY AUTOINCREMENT,
 		Uid TEXT NOT NULL,
-		State TEXT,
+		State INTEGER ,
 		Battery INTEGER,
-		CreatedAt TEXT ,
-		UpdatedAt TEXT
+		CreatedAt INTEGER ,
+		UpdatedAt INTEGER 
 	);
 	`
 
@@ -50,7 +51,7 @@ func SaveVehicle(v Vehicle) {
 		log.Print(err)
 		return
 	} else {
-		_, err := statement.Exec(v.Uid,v.inState(), v.ChargeLevel(), v.CreatedAt, v.UpdatedAt)
+		_, err := statement.Exec(v.Uid,v.Get(), v.ChargeLevel(), v.CreatedAt, v.UpdatedAt)
 		if (err != nil) {
 			panic("could not save vehicle to database...")
 		}
@@ -64,26 +65,28 @@ func RestoreVehiclesFromDB() {
 	if (err != nil) {
 		exit(err)
 	}
-	var Id int
-	var Uid string
-	var State uint8
-	var Battery int
-	var createdAt string
-	var updatedAt string
+	var id int
+	var uid string
+	var state vstate.State
+	var battery int
+	var createdAt int64
+	var updatedAt int64
 
 
 	for rows.Next() {
-		err = rows.Scan(&Id, &Uid, &State, &Battery,&createdAt,&updatedAt)
+		err = rows.Scan(&id, &uid, &state, &battery,&createdAt,&updatedAt)
 		if (err != nil) {
 			exit(err)
 		}
-		fmt.Println(Id)
-		fmt.Println(Uid)
-		fmt.Println(State)
-		fmt.Println(Battery)
+		fmt.Println(id)
+		fmt.Println(uid)
+		fmt.Println(state)
+		fmt.Println(battery)
 		fmt.Println(createdAt)
 		fmt.Println(updatedAt)
-
+		v := Vehicle{Id: id,Uid:uid,State: state,Battery: battery,CreatedAt: createdAt,UpdatedAt: updatedAt,Port: make(chan Request)}
+		app.garage.Set(v.Uid,&v)
+		v.listen()
 	}
 
 	rows.Close() //good habit to close
@@ -93,7 +96,7 @@ func init() {
 	fmt.Print("Configuring the database...\n")
 	createdb("./v.db")
 	createTable()
-//	RestoreVehiclesFromDB()
+	RestoreVehiclesFromDB()
 	go func() {
 		<-app.start
 		for {

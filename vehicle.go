@@ -12,8 +12,8 @@ type Vehicle struct {
 	Uid        string `json:"id"`
 	Battery   int `json:"battery"`
 	Port      chan Request  `json:"-"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	CreatedAt int64 `json:"createdAt"`
+	UpdatedAt int64 `json:"updatedAt"`
 }
 
 func (v *Vehicle) print() {
@@ -21,7 +21,7 @@ func (v *Vehicle) print() {
 }
 
 func (v *Vehicle) stamp() vstate.State {
-	v.UpdatedAt = time.Now()
+	v.UpdatedAt = time.Now().UnixNano()
 	return v.State
 }
 
@@ -29,11 +29,11 @@ func (v *Vehicle) inState() string {
 	return v.State.Name()
 }
 
-func (v *Vehicle) lastMod() time.Time {
+func (v *Vehicle) lastMod() int64 {
 	return v.UpdatedAt
 }
 
-func (v *Vehicle) createdAt() time.Time {
+func (v *Vehicle) createdAt() int64 {
 	return v.CreatedAt
 }
 
@@ -69,7 +69,7 @@ func (v *Vehicle) listen() {
 }
 
 func NewVehicle() *Vehicle {
-	v := Vehicle{Uid: uniqueId(), Port: make(chan Request), Battery: 100, CreatedAt: time.Now()}
+	v := Vehicle{Uid: uniqueId(), Port: make(chan Request), Battery: 100, CreatedAt: time.Now().UnixNano()}
 	v.Set(vstate.Init, vstate.System)
 	v.stamp()
 	app.store <- &v
