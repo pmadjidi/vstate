@@ -3,8 +3,7 @@ package vstate
 type State int
 
 const (
-	Init State = iota
-	Ready
+	Ready State = iota
 	Battery_low
 	Bounty
 	Riding

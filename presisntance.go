@@ -47,13 +47,12 @@ func clearTable() {
 
 func SaveVehicle(v *Vehicle) {
 
-	uid,state,battery,createdAt,updatedAt := v.readValues();
 	statement, err := app.DB.Prepare("INSERT OR REPLACE INTO vehicles (Uid,State, Battery,CreatedAt,UpdatedAt) VALUES (?,?,?,?,?)")
 	if (err != nil) {
 		log.Print(err.Error())
 		return
 	} else {
-		_, err := statement.Exec(uid,state,battery,createdAt,updatedAt)
+		_, err := statement.Exec(v.Uid,v.State,v.Battery,v.CreatedAt,v.UpdatedAt)
 		if (err != nil) {
 			log.Print(err.Error())
 			panic("could not save vehicle to database...")
@@ -116,15 +115,15 @@ func init() {
 		for {
 			select {
 			case v := <-app.store:
-				fmt.Print("\n Presisting Vehicle id: ", v.Uid+"\n")
+				fmt.Print("Presisting Vehicle id: ", v.Uid+"\n")
 				SaveVehicle(v);
 			case v := <-app.delete:
-				fmt.Print("\n Deleting Vehicle id: ", v.Uid+"\n")
+				fmt.Print("Deleting Vehicle id: ", v.Uid+"\n")
 				DeleteVehicle(v);
-				fmt.Print("\n Removing Vehicle id: ", v.Uid+"from Garage....\n")
+				fmt.Print("Removing Vehicle id: ", v.Uid+"from Garage....\n")
 				app.garage.Delete(v.Uid)
 			case <-app.quit:
-				fmt.Print("\nStopping database event loop...\n")
+				fmt.Print("Stopping database event loop...\n")
 				break Loop
 			}
 		}

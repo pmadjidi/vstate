@@ -2,242 +2,222 @@ package vstate
 
 import (
 	"fmt"
+	assert2 "gotest.tools/assert"
 	"testing"
 )
 
 func Test001(t *testing.T) {
-	var s State
-	s.init()
+	s := Ready
 	s.Print()
-	if (s.Get() != Init) {
-		t.Errorf("State init failed, got: %d, want: %d.", s.Get(), Init)
+	if (s != Ready) {
+		t.Errorf("State Ready failed, got: %d, want: %d.", s, Ready)
 	}
+	assert2.Equal(t,s,Ready)
 }
 
 func Test002(t *testing.T) {
-	var s State
-	s.Set(Ready, Admins)
-	s.Print()
-	if (s.Get() != Ready) {
-		t.Errorf("State init failed, got: %d, want: %d.", s.Get(), Ready)
+	s := Ready
+	ns, err := s.Next(SetState, Admins, Battery_low)
+	ns.Print()
+	if (err != nil) {
+		fmt.Print(err)
+		t.Errorf("SetState failed, got: error, want: %d.", Battery_low)
 	}
+	assert2.Equal(t,ns,Battery_low)
 }
 
 func Test003(t *testing.T) {
-	var s State
-	_, err := s.Set(Ready, 14)
-	s.Print()
-	if (err != nil) {
-		fmt.Print(err)
-	} else {
-		t.Errorf("Expecting error UnAuthorized")
+	s := Ready
+	ns, err := s.Next(SetState, NoAuth, Battery_low)
+	ns.Print()
+	if (err == nil) {
+		t.Errorf("Setstate failed, got: %d, want: %d.", ns, Nothing)
 	}
+	assert2.Equal(t,ns,Nothing)
 }
 
 func Test004(t *testing.T) {
-	var s State
-	s.Set(Ready, Admins)
-	s.Next(Claim, EndUser)
+	s := Ready
+	ns, err := s.Next(Claim, EndUser)
 	s.Print()
-	if (s.Get() != Riding) {
-		t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Riding)
+	if (err != nil) {
+		t.Errorf("Claim failed, got: %d, want: %d.", ns, Riding)
 	}
+	s.Print()
+	assert2.Equal(t,ns,Riding)
 }
 
 func Test005(t *testing.T) {
-	var s State
-	s.Set(Riding, Admins)
-	_, err := s.Next(Claim, EndUser)
-	s.Print()
-	fmt.Print(err)
+	s := Riding
+	ns, err := s.Next(Claim, EndUser)
+	ns.Print()
 	if (err == nil) {
-		t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Riding)
+		t.Errorf("Claim failed, got: %d, want: %d.", ns, Nothing)
 	}
+	assert2.Equal(t,ns,Nothing)
 }
 
 func Test006(t *testing.T) {
-	var s State
-	s.Set(Battery_low, Admins)
-	_, err := s.Next(Claim, EndUser)
-	s.Print()
-	fmt.Print(err)
+	s := Battery_low
+	ns, err := s.Next(Claim, EndUser)
+	ns.Print()
 	if (err == nil) {
-		t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Battery_low)
+		t.Errorf("Claim failed, got: %d, want: %d.", ns, Nothing)
 	}
+	assert2.Equal(t,ns,Nothing)
 }
 
 func Test007(t *testing.T) {
-	var s State
-	s.Set(Battery_low, Admins)
-	_, err := s.Next(Claim, Hunters)
-	s.Print()
+	s := Battery_low
+	ns, err := s.Next(Claim, Hunters)
+	ns.Print()
 	if (err != nil) {
-		t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Riding)
+		t.Errorf("Claim failed, got: %d, want: %d.", ns, Bounty)
 	}
+	assert2.Equal(t,ns,Bounty)
 }
 
-
 func Test008(t *testing.T) {
-	var s State
-	s.Set(Service_mode, Admins)
-	_, err := s.Next(Claim, Hunters)
-	s.Print()
-	fmt.Print(err)
+	s := Service_mode
+	ns, err := s.Next(Claim, Hunters)
+	ns.Print()
 	if (err == nil) {
-		t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Service_mode)
+		t.Errorf("Claim failed, got: %d, want: %d.", ns, Nothing)
 	}
+	assert2.Equal(t,ns,Nothing)
 }
 
 func Test009(t *testing.T) {
-	var s State
-	s.Set(Terminated, Admins)
-	_, err := s.Next(Claim, EndUser)
-	s.Print()
-	fmt.Print(err)
+	s := Terminated
+	ns, err := s.Next(Claim, EndUser)
+	ns.Print()
 	if (err == nil) {
-		t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Terminated)
+		t.Errorf("Claim failed, got: %d, want: %d.", ns, Nothing)
 	}
+	assert2.Equal(t,ns,Nothing)
 }
 
 func Test010(t *testing.T) {
-	var s State
-	s.Set(Bounty, Admins)
-	_, err := s.Next(Claim, EndUser)
-	s.Print()
-	fmt.Print(err)
+	s := Bounty
+	ns, err := s.Next(Claim, EndUser)
+	ns.Print()
 	if (err == nil) {
-		t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Bounty)
+		t.Errorf("Claim failed, got: %d, want: %d.", ns, Nothing)
 	}
+	assert2.Equal(t,ns,Nothing)
 }
 
 func Test011(t *testing.T) {
-	var s State
-	s.Set(Bounty, Admins)
-	_, err := s.Next(Hunter, EndUser)
-	s.Print()
-	fmt.Print(err)
+	s := Bounty
+	ns, err := s.Next(Hunter, EndUser)
+	ns.Print()
 	if (err == nil) {
-		t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Bounty)
+		t.Errorf("Claim failed, got: %d, want: %d.", ns, Nothing)
 	}
+	assert2.Equal(t,ns,Nothing)
 }
 
 func Test012(t *testing.T) {
-	var s State
-	s.Set(Bounty, Admins)
-	_, err := s.Next(Hunter, Hunters)
-	s.Print()
+	s := Bounty
+	ns, err := s.Next(Hunter, Hunters)
+	ns.Print()
 	if (err != nil) {
-		t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Collected)
+		t.Errorf("Claim failed, got: %d, want: %d.", ns, Collected)
 	}
+	assert2.Equal(t,ns,Collected)
 }
-
-
 
 func Test013(t *testing.T) {
-	var s State
-	s.Set(Collected, Admins)
-	_, err := s.Next(Hunter, Hunters)
-	s.Print()
+	s := Collected
+	ns, err := s.Next(Hunter, Hunters)
+	ns.Print()
 	if (err != nil) {
-		t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Dropped)
+		t.Errorf("Claim failed, got: %d, want: %d.", ns, Dropped)
 	}
+	assert2.Equal(t,ns,Dropped)
 }
-
 
 func Test014(t *testing.T) {
-	var s State
-	s.Set(Dropped, Admins)
-	_, err := s.Next(Hunter, Hunters)
-	s.Print()
+	s := Dropped
+	ns, err := s.Next(Hunter, Hunters)
+	ns.Print()
 	if (err != nil) {
-		t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Ready)
+		t.Errorf("Claim failed, got: %s, want: %s.", ns.String(), Ready.String())
 	}
+	assert2.Equal(t,ns,Ready)
 }
-
-
 
 func Test015(t *testing.T) {
-	var s State
-	s.Set(Unknown, Admins)
-	for ns := Claim; ns <= Hours48; ns++ {
-		_, err := s.Next(ns, EndUser,Nothing)
-		fmt.Print(err)
+	s := Unknown
+	for ev := Claim; ev <= Hours48; ev++ {
+		ns, err := s.Next(ev, EndUser, Nothing)
 		if (err == nil) {
-			fmt.Print(ns.Name())
-			t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Unknown)
+			fmt.Print(ev.Name())
+			t.Errorf("%s, got: %s, want: %s.", ev.String(),ns.String(), Nothing.String())
 			break
 		}
+		assert2.Equal(t,ns,Nothing)
 	}
 }
 
+
 func Test016(t *testing.T) {
-	var s State
-	s.Set(Terminated, Admins)
-	for ns := Claim; ns <= Hours48; ns++ {
-		_, err := s.Next(ns, EndUser,Nothing)
-		fmt.Print(err)
+	s := Terminated
+	for ev := Claim; ev <= Hours48; ev++ {
+		ns, err := s.Next(ev, EndUser, Nothing)
 		if (err == nil) {
-			fmt.Print(ns.Name())
-			t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Terminated)
+			fmt.Print(ev.Name())
+			t.Errorf("%s, got: %s, want: %s.",ev.String(), ns.String(), Nothing.String())
 			break
 		}
+		assert2.Equal(t,ns,Nothing)
 	}
 }
 
 func Test017(t *testing.T) {
-	var s State
-	s.Set(Service_mode, Admins)
-	for ns := Claim; ns <= Hours48; ns++ {
-		_, err := s.Next(ns, EndUser,Nothing)
-		fmt.Print(err)
+	s := Service_mode
+	for ev := Claim; ev <= Hours48; ev++ {
+		ns, err := s.Next(ev, EndUser, Nothing)
 		if (err == nil) {
-			fmt.Print(ns.Name())
-			t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Service_mode)
+			fmt.Print(ev.Name())
+			t.Errorf("%s, got: %s, want: %s.", ev.String(),ns.String(), Nothing.String())
 			break
 		}
+		assert2.Equal(t,ns,Nothing)
 	}
 }
 
-func Test18(t *testing.T) {
-	var s State
-	s.Set(Battery_low, System)
-	fmt.Printf("*******************")
-	for ns := Claim; ns <=  Hours48; ns++ {
-		_, err := s.Next(ns, EndUser,Nothing)
-		if (err == nil ) {
-			fmt.Printf("**Battery low and %s  %s\n",ns.String(),"Battery_low")
-		}
-		fmt.Printf("%s",err)
+
+func Test018(t *testing.T) {
+	s := Battery_low
+	ns, err := s.Next(LessThen20, System)
+	ns.Print()
+	if (err != nil) {
+		t.Errorf("LessThen20, got: %s, want: %s.", ns.String(), Bounty.String())
 	}
+	assert2.Equal(t,ns,Bounty)
 }
+
+
 
 func Test019(t *testing.T) {
-	var s State
-	s.Set(Bounty, Admins)
-	_, err := s.Next(Hunter, Hunters)
-	s.Print()
-	if (err != nil) {
-		t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Bounty)
+	s := Ready
+	ns, err := s.Next(LessThen20, System)
+	ns.Print()
+	if (err == nil) {
+		t.Errorf("LessThen20, got: %s, want: %s.", ns.String(), Nothing.String())
 	}
+	assert2.Equal(t,ns,Nothing)
 }
+
 
 func Test020(t *testing.T) {
-	var s State
-	s.Set(Collected, Admins)
-	_, err := s.Next(Hunter, Hunters)
-	s.Print()
+	s := Riding
+	ns, err := s.Next(LessThen20, System)
+	ns.Print()
 	if (err != nil) {
-		t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Bounty)
+		t.Errorf("LessThen20, got: %s, want: %s.", ns.String(), Battery_low.String())
 	}
+	assert2.Equal(t,ns,Battery_low)
 }
 
-
-func Test021(t *testing.T) {
-	var s State
-	s.Set(Dropped, Admins)
-	_, err := s.Next(Hunter, Hunters)
-	s.Print()
-	if (err != nil) {
-		t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Bounty)
-	}
-}

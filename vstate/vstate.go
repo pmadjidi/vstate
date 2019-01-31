@@ -9,7 +9,7 @@ import (
 
 
 func ValidState(s string) (State,bool) {
-	for i := Init; i <= Nothing; i++  {
+	for i := Ready; i <= Nothing; i++  {
 		fmt.Printf("%s,%s\n",i.String(),s)
 		if i.String() == s  {
 			return i,true
@@ -19,32 +19,23 @@ func ValidState(s string) (State,bool) {
 }
 
 
-func (s *State) init() State {
-	*s = Init;
-	return *s
-}
 
 func (s State) Print() {
 	fmt.Print("\nState is " + s.String() + "\n")
 }
 
 
-func (s State) Get() State {
-	return s
-}
 
 
-
-
-func (s *State) Set(newState State,role URoles) (State,error) {
+func adminSystemSet(newState State,role URoles) (State,error) {
 	var result State
 	var err error = nil
-	if newState < Init || newState > Nothing {
+	if newState < Ready || newState > Nothing {
 		return Nothing, errors.New("setState: Invalid State as input: " + newState.String())
 	}
 	switch (role) {
 	case Admins,System:
-		result,*s = newState,newState
+		result= newState
 	default:
 		result = Nothing
 		errorMsg := "UnAuthorized\n"
@@ -55,7 +46,7 @@ func (s *State) Set(newState State,role URoles) (State,error) {
 
 
 
-func (s *State) Next(newEvent Event,role URoles, state ... State) (State, error) {
+func (s State) Next(newEvent Event,role URoles,state ... State) (State, error) {
 	var result State
 	var err error = nil
 	if (newEvent < Claim || newEvent > Hours48) {
@@ -63,19 +54,24 @@ func (s *State) Next(newEvent Event,role URoles, state ... State) (State, error)
 	}
 	switch(newEvent) {
 	case Claim:
-		result, err = s.claim(role)
+		result, err = claim(s,role)
 	case DisClaim:
-		result,err = s.disClaim()
+		result,err =  disClaim(s)
 	case Hunter:
-		result,err = s.hunter(role)
+		result,err =  hunter(s,role)
 	case NineThirtyPm:
-		result,err = s.nineThirtyPm(role)
+		result,err =  nineThirtyPm(s,role)
 	case LessThen20:
-		result,err = s.lessThen20()
+		result,err =  lessThen20(s)
 	case Hours48:
-		result,err = s.hours48()
+		result,err = hours48(s)
 	case SetState:
-		result,err = s.Set(state[0],role)
+		if len(state) == 0 {
+			result = Nothing
+			err = errors.New("Argument to set state is missing....")
+		} else {
+			result, err = adminSystemSet(state[0], role)
+		}
 	default:
 		result = Nothing
 		err = errors.New("Next: Unkown Event")
@@ -83,48 +79,38 @@ func (s *State) Next(newEvent Event,role URoles, state ... State) (State, error)
 	return result,err
 }
 
-func (s *State) claim(role URoles) (State,error){
+func claim(oldState State,role URoles) (State,error){
 	var result State
 	var err error = nil
-	switch (*s) {
+	switch (oldState) {
 	case Ready:
-		result,*s = Riding,Riding
+		result = Riding
 	case Battery_low:
 		if ( role == Hunters) {
-			result,*s = Riding,Riding
+			result  = Bounty
 		} else {
 			result = Nothing
-			errorMsg := "Claim: Only Hunter can claim vehicle in state: " + s.String() + "\n"
-			err = errors.New(errorMsg)
-		}
-	case Init:
-		if ( role == Admins) {
-			result,*s = Riding,Riding
-		} else {
-			result = Nothing
-			errorMsg := "Claim: Only Admins can claim vehicle in state: " + s.String() + "\n"
+			errorMsg := "Claim: Only Hunter can claim vehicle in state: " + oldState.String() + "\n"
 			err = errors.New(errorMsg)
 		}
 	default:
 		result = Nothing
-		errorMsg := "Claim: Can not claim vehicle in state: " + s.String() + "\n"
+		errorMsg := "Claim: Can not claim vehicle in state: " + oldState.String() + "\n"
 		err = errors.New(errorMsg)
 	}
 	return result,err
 }
 
 
-func (s *State) disClaim() (State,error){
+func  disClaim(oldState State) (State,error){
 	var result State
 	var err error = nil
-	switch (*s) {
+	switch (oldState) {
 	case Riding:
-		result,*s = Ready,Ready
-	case Battery_low:
-		result,*s = Bounty,Bounty
+		result = Ready
 	default:
 		result = Nothing
-		errorMsg := "Claim: Can not disclame vehicle in state: " + s.String() + "\n"
+		errorMsg := "Claim: Can not disclame vehicle in state: " + oldState.String() + "\n"
 		err = errors.New(errorMsg)
 	}
 	return result,err
@@ -132,23 +118,19 @@ func (s *State) disClaim() (State,error){
 
 
 
-func (s *State) lessThen20() (State,error) {
+func lessThen20(oldState State) (State,error) {
 	var result State
 	var err error = nil
-	switch (*s) {
-	case Unknown,Terminated,Service_mode:
-		result = Nothing
-		errorMsg := "Can not change state from : " + s.String() + "\n"
-		err = errors.New(errorMsg)
-	case Ready:
-		result,*s = Bounty,Bounty
+	switch (oldState) {
 	case Riding:
-		result,*s = Battery_low,Battery_low
-	case Battery_low:
-		result,*s = Bounty,Bounty
+		result  = Battery_low
+	case Battery_low,Bounty:
+		result = Bounty
+
 	default:
 		result = Nothing
-		err = nil
+		errorMsg := "Can not change state from : " + oldState.String() + "\n"
+		err = errors.New(errorMsg)
 	}
 	return result,err
 }
@@ -156,14 +138,14 @@ func (s *State) lessThen20() (State,error) {
 
 
 
-func (s *State) hunter(role URoles)(State,error) {
+func  hunter(oldState State,role URoles)(State,error) {
 
 	var result State
 	var err error = nil
-	switch (*s) {
+	switch (oldState) {
 	case Bounty:
 		if (role == Hunters) {
-			result, *s = Collected, Collected
+			result= Collected
 		} else {
 			result = Nothing
 			errorMsg := "Hunter: Can not Collect vehicle in state Bounty if you are not member of Hunters\n"
@@ -171,7 +153,7 @@ func (s *State) hunter(role URoles)(State,error) {
 		}
 	case Collected:
 		if (role == Hunters) {
-			result, *s = Dropped, Dropped
+			result = Dropped
 		} else {
 			result = Nothing
 			errorMsg := "Hunter: Can not drop vehicle in state Collected if you are not member of Hunters\n"
@@ -179,7 +161,7 @@ func (s *State) hunter(role URoles)(State,error) {
 		}
 	case Dropped:
 		if (role == Hunters) {
-			result, *s = Ready, Ready
+			result  = Ready
 		} else {
 			result = Nothing
 			errorMsg := "Hunter: Can not return vehicle in state ready if you are not member of Hunters\n"
@@ -187,22 +169,22 @@ func (s *State) hunter(role URoles)(State,error) {
 		}
 	default:
 		result = Nothing
-		errorMsg := "Hunter: Can not Hunt vehicle in state: " + s.String() + "\n"
+		errorMsg := "Hunter: Can not Hunt vehicle in state: " + oldState.String() + "\n"
 		err = errors.New(errorMsg)
 	}
 	return result,err
 }
 
-func (s *State) hours48() (State,error){
+func  hours48(oldState State) (State,error){
 	var result State
 	var err error = nil
-	switch (*s) {
-	case Unknown,Terminated,Service_mode:
-		result = Nothing
-		errorMsg := "Can not change state from : " + s.String() + "\n"
-		err = errors.New(errorMsg)
+	switch (oldState) {
+	case Ready:
+		result = Unknown
 	default:
-		result,*s = Unknown,Unknown
+		result = Nothing
+		errorMsg := "nineThirtyPm state change possible only from:" + Ready.String() + "\n"
+		err = errors.New(errorMsg)
 	}
 	return result,err
 }
@@ -210,16 +192,16 @@ func (s *State) hours48() (State,error){
 
 
 
-func (s *State) nineThirtyPm(role URoles) (State,error){
+func  nineThirtyPm(oldState State,role URoles) (State,error){
 	var result State
 	var err error = nil
-	switch (*s) {
-	case Unknown,Terminated,Service_mode:
-		result = Nothing
-		errorMsg := "Can not change state from : " + s.String() + "\n"
-		err = errors.New(errorMsg)
+	switch (oldState) {
+	case Ready:
+		result = Bounty
 	default:
-		result,*s = Bounty,Bounty
+		result = Nothing
+		errorMsg := "nineThirtyPm state change possible only from:" + Ready.String() + "\n"
+		err = errors.New(errorMsg)
 	}
 	return result,err
 }

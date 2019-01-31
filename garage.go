@@ -25,7 +25,8 @@ func (g *Garage) getMap() map[string]*Vehicle {
 	copy := make( map[string]*Vehicle)
 	g.RLock()
 	for k,v := range g.internal {
-		copy[k] = v
+		 nv := v.clone()
+		copy[k] = nv
 	}
 	g.RUnlock()
 	return copy
