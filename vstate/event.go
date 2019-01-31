@@ -7,7 +7,6 @@ const (
 	Claim Event = iota // always first
 	DisClaim
 	Hunter
-	Dropp
 	NineThirtyPm
 	LessThen20
 	SetState

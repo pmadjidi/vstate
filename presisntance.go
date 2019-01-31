@@ -25,7 +25,7 @@ func createTable() {
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS vehicles(
 		Id INTEGER PRIMARY KEY AUTOINCREMENT,
-		Uid TEXT NOT NULL,
+		Uid TEXT NOT NULL UNIQUE,
 		State INTEGER ,
 		Battery INTEGER,
 		CreatedAt INTEGER ,
@@ -45,32 +45,34 @@ func clearTable() {
 	app.DB.Exec("ALTER SEQUENCE vehicles_id_seq RESTART WITH 1")
 }
 
-func SaveVehicle(v Vehicle) {
-	statement, err := app.DB.Prepare("INSERT INTO vehicles (Uid,State, Battery,CreatedAt,UpdatedAt) VALUES (?,?,?,?,?)")
+func SaveVehicle(v *Vehicle) {
+
+	uid,state,battery,createdAt,updatedAt := v.readValues();
+	statement, err := app.DB.Prepare("INSERT OR REPLACE INTO vehicles (Uid,State, Battery,CreatedAt,UpdatedAt) VALUES (?,?,?,?,?)")
 	if (err != nil) {
 		log.Print(err.Error())
 		return
 	} else {
-		_, err := statement.Exec(v.Uid,v.Get(), v.ChargeLevel(), v.CreatedAt, v.UpdatedAt)
+		_, err := statement.Exec(uid,state,battery,createdAt,updatedAt)
 		if (err != nil) {
+			log.Print(err.Error())
 			panic("could not save vehicle to database...")
 		}
 	}
 }
 
-func DeleteVehicle(v Vehicle) {
+func DeleteVehicle(v *Vehicle) {
 	statement, err := app.DB.Prepare("DELETE  FROM vehicles where Uid = (Uid) VALUES (?)")
 	if (err != nil) {
 		log.Print(".............." + err.Error())
 		return
 	} else {
-		_, err := statement.Exec(v.Uid)
+		_, err := statement.Exec(v.getUid())
 		if (err != nil) {
 			panic("could not delete the vehicle from database...")
 		}
 	}
 }
-
 
 func RestoreVehiclesFromDB() {
 	rows, err := app.DB.Query("SELECT * FROM vehicles")
@@ -84,9 +86,8 @@ func RestoreVehiclesFromDB() {
 	var createdAt int64
 	var updatedAt int64
 
-
 	for rows.Next() {
-		err = rows.Scan(&id, &uid, &state, &battery,&createdAt,&updatedAt)
+		err = rows.Scan(&id, &uid, &state, &battery, &createdAt, &updatedAt)
 		if (err != nil) {
 			exit(err)
 		}
@@ -96,8 +97,8 @@ func RestoreVehiclesFromDB() {
 		fmt.Println(battery)
 		fmt.Println(createdAt)
 		fmt.Println(updatedAt)
-		v := Vehicle{Id: id,Uid:uid,State: state,Battery: battery,CreatedAt: createdAt,UpdatedAt: updatedAt,Port: make(chan *Request)}
-		app.garage.Set(v.Uid,&v)
+		v := Vehicle{Id: id, Uid: uid, State: state, Battery: battery, CreatedAt: createdAt, UpdatedAt: updatedAt, Port: make(chan *Request)}
+		app.garage.Set(v.Uid, &v)
 		v.listen()
 	}
 
@@ -111,18 +112,20 @@ func init() {
 	RestoreVehiclesFromDB()
 	go func() {
 		<-app.start
+	Loop:
 		for {
 			select {
 			case v := <-app.store:
-				fmt.Print("\n Presisting Vehicle id: ",v.Uid + "\n")
-				SaveVehicle(*v);
+				fmt.Print("\n Presisting Vehicle id: ", v.Uid+"\n")
+				SaveVehicle(v);
 			case v := <-app.delete:
-				fmt.Print("\n Deleting Vehicle id: ",v.Uid + "\n")
-				DeleteVehicle(*v);
-				fmt.Print("\n Removing Vehicle id: ",v.Uid + "from Garage....\n")
+				fmt.Print("\n Deleting Vehicle id: ", v.Uid+"\n")
+				DeleteVehicle(v);
+				fmt.Print("\n Removing Vehicle id: ", v.Uid+"from Garage....\n")
 				app.garage.Delete(v.Uid)
 			case <-app.quit:
-				break
+				fmt.Print("\nStopping database event loop...\n")
+				break Loop
 			}
 		}
 	}()

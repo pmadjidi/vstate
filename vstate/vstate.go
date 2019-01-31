@@ -25,7 +25,7 @@ func (s *State) init() State {
 }
 
 func (s State) Print() {
-	fmt.Print("State is " + s.String() + "\n")
+	fmt.Print("\nState is " + s.String() + "\n")
 }
 
 
@@ -68,8 +68,6 @@ func (s *State) Next(newEvent Event,role URoles, state ... State) (State, error)
 		result,err = s.disClaim()
 	case Hunter:
 		result,err = s.hunter(role)
-	case Dropp:
-		result,err = s.dropp(role)
 	case NineThirtyPm:
 		result,err = s.nineThirtyPm(role)
 	case LessThen20:
@@ -81,10 +79,6 @@ func (s *State) Next(newEvent Event,role URoles, state ... State) (State, error)
 	default:
 		result = Nothing
 		err = errors.New("Next: Unkown Event")
-	}
-	if (err == nil) {
-		*s = result
-		return *s,nil
 	}
 	return result,err
 }
@@ -148,6 +142,10 @@ func (s *State) lessThen20() (State,error) {
 		err = errors.New(errorMsg)
 	case Ready:
 		result,*s = Bounty,Bounty
+	case Riding:
+		result,*s = Battery_low,Battery_low
+	case Battery_low:
+		result,*s = Bounty,Bounty
 	default:
 		result = Nothing
 		err = nil
@@ -210,26 +208,6 @@ func (s *State) hours48() (State,error){
 }
 
 
-func (s *State) dropp(role URoles) (State,error){
-	var result State
-	var err error = nil
-	switch (*s) {
-	case Collected:
-		if (role == Hunters) {
-			*s,result = Ready,Ready
-		} else {
-			result = Nothing
-			errorMsg := "Dropp: Can can only be done by Hunters: " + s.String() + "\n"
-			err = errors.New(errorMsg)
-		}
-	default:
-		result = Nothing
-		errorMsg := "Dropp: Can only be performed  on collected: " + s.String() + "\n"
-		err = errors.New(errorMsg)
-
-	}
-	return result,err
-}
 
 
 func (s *State) nineThirtyPm(role URoles) (State,error){

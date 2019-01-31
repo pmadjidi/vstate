@@ -12,27 +12,27 @@ import (
 )
 
 func (a *App) initializeRoutes() {
-	a.Router.HandleFunc("/admin/newv", a.createVehicle).Methods("GET")
-	a.Router.HandleFunc("/admin/listv", a.listVehicle).Methods("GET")
-	a.Router.HandleFunc("/admin/claim/{id:[0-9A-Za-z]+}", a.claimDisClaimVehicle).Methods("GET")
-	a.Router.HandleFunc("/admin/disclaim/{id:[0-9A-Za-z]+}", a.claimDisClaimVehicle).Methods("GET")
-	a.Router.HandleFunc("/admin/setstate/{id:[0-9A-Za-z]+}/{state:[a-zA-z]+}", a.setState).Methods("Get")
-	a.Router.HandleFunc("/admin/getstate/{id:[0-9A-Za-z]+}", a.getState).Methods("GET")
-	a.Router.HandleFunc("/admin/delete/{id:[0-9A-Za-z]+}", a.deleteVehicle).Methods("GET")
+	a.Router.HandleFunc("/admin/newv", createVehicle).Methods("GET")
+	a.Router.HandleFunc("/admin/listv", listVehicle).Methods("GET")
+	a.Router.HandleFunc("/admin/claim/{id:[0-9A-Za-z]+}", claimDisClaimVehicle).Methods("GET")
+	a.Router.HandleFunc("/admin/disclaim/{id:[0-9A-Za-z]+}", claimDisClaimVehicle).Methods("GET")
+	a.Router.HandleFunc("/admin/setstate/{id:[0-9A-Za-z]+}/{state:[a-zA-z]+}", setState).Methods("Get")
+	a.Router.HandleFunc("/admin/getstate/{id:[0-9A-Za-z]+}", getState).Methods("GET")
+	a.Router.HandleFunc("/admin/delete/{id:[0-9A-Za-z]+}", deleteVehicle).Methods("GET")
 
-	a.Router.HandleFunc("/hunter/hunt/{id:[0-9A-Za-z]+}", a.huntVehicle).Methods("GET")
-	a.Router.HandleFunc("/hunter/claim/{id:[0-9A-Za-z]+}", a.claimDisClaimVehicle).Methods("GET")
-	a.Router.HandleFunc("/hunter/disclaim/{id:[0-9A-Za-z]+}", a.claimDisClaimVehicle).Methods("GET")
+	a.Router.HandleFunc("/hunter/hunt/{id:[0-9A-Za-z]+}", huntVehicle).Methods("GET")
+	a.Router.HandleFunc("/hunter/claim/{id:[0-9A-Za-z]+}", claimDisClaimVehicle).Methods("GET")
+	a.Router.HandleFunc("/hunter/disclaim/{id:[0-9A-Za-z]+}", claimDisClaimVehicle).Methods("GET")
 
-	a.Router.HandleFunc("/user/claim/{id:[0-9A-Za-z]+}", a.claimDisClaimVehicle).Methods("GET")
-	a.Router.HandleFunc("/user/disclaim/{id:[0-9A-Za-z]+}", a.claimDisClaimVehicle).Methods("GET")
+	a.Router.HandleFunc("/user/claim/{id:[0-9A-Za-z]+}", claimDisClaimVehicle).Methods("GET")
+	a.Router.HandleFunc("/user/disclaim/{id:[0-9A-Za-z]+}", claimDisClaimVehicle).Methods("GET")
 
 }
 
-func (a *App) createVehicle(w http.ResponseWriter, r *http.Request) {
+func  createVehicle(w http.ResponseWriter, r *http.Request) {
 	v := NewVehicle()
 	app.garage.Set(v.Uid, v)
-	b, err := json.Marshal(v)
+	b, err := v.serilize()
 	if (err != nil) {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(out("Error...", 2))
@@ -42,7 +42,7 @@ func (a *App) createVehicle(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-func (a *App) deleteVehicle(w http.ResponseWriter, r *http.Request) {
+func deleteVehicle(w http.ResponseWriter, r *http.Request) {
 	args := mux.Vars(r)
 	id := args["id"]
 	v, ok := app.garage.getVehicleById(id)
@@ -62,7 +62,7 @@ func (a *App) deleteVehicle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *App) huntVehicle(w http.ResponseWriter, r *http.Request) {
+func huntVehicle(w http.ResponseWriter, r *http.Request) {
 	args := mux.Vars(r)
 	id := args["id"]
 	v, ok := app.garage.getVehicleById(id)
@@ -79,7 +79,7 @@ func (a *App) huntVehicle(w http.ResponseWriter, r *http.Request) {
 		case res := <-req.resp:
 			if (res.err == nil) {
 				w.WriteHeader(http.StatusOK)
-				b, err := json.Marshal(v)
+				b, err := v.serilize()
 				if (err == nil) {
 					w.Write(b)
 				} else {
@@ -104,7 +104,7 @@ func (a *App) huntVehicle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *App) listVehicle(w http.ResponseWriter, r *http.Request) {
+func listVehicle(w http.ResponseWriter, r *http.Request) {
 	b, err := json.Marshal(app.garage.getMap())
 	if (err != nil) {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -117,7 +117,7 @@ func (a *App) listVehicle(w http.ResponseWriter, r *http.Request) {
 
 var validPath = regexp.MustCompile("^/(admin|user|hunter)/([a-zA-Z0-9]+)/.+$")
 
-func (a *App) setState(w http.ResponseWriter, r *http.Request) {
+func setState(w http.ResponseWriter, r *http.Request) {
 	role := validPath.FindStringSubmatch(r.URL.Path)
 	fmt.Printf("Req: %s %s %s\n", r.URL.Host, r.URL.Path, role)
 	args := mux.Vars(r)
@@ -138,7 +138,7 @@ func (a *App) setState(w http.ResponseWriter, r *http.Request) {
 			case res := <-req.resp:
 				if (res.err == nil) {
 					w.WriteHeader(http.StatusOK)
-					b, err := json.Marshal(v)
+					b, err := v.serilize()
 					if (err == nil) {
 						w.Write(b)
 					} else {
@@ -163,7 +163,7 @@ func (a *App) setState(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *App) getState(w http.ResponseWriter, r *http.Request) {
+func getState(w http.ResponseWriter, r *http.Request) {
 	role := validPath.FindStringSubmatch(r.URL.Path)
 	fmt.Printf("Req: %s %s %s\n", r.URL.Host, r.URL.Path, role)
 	args := mux.Vars(r)
@@ -172,7 +172,7 @@ func (a *App) getState(w http.ResponseWriter, r *http.Request) {
 	v, ok := app.garage.getVehicleById(id)
 	if (ok) {
 		w.WriteHeader(http.StatusOK)
-		b, err := json.Marshal(v)
+		b, err := v.serilize()
 		if (err == nil) {
 			w.Write(b)
 		} else {
@@ -186,7 +186,7 @@ func (a *App) getState(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *App) claimDisClaimVehicle(w http.ResponseWriter, r *http.Request) {
+func claimDisClaimVehicle(w http.ResponseWriter, r *http.Request) {
 	parse := validPath.FindStringSubmatch(r.URL.Path)
 	roleName := parse[1]
 	eventName := parse[2]
@@ -227,7 +227,7 @@ func (a *App) claimDisClaimVehicle(w http.ResponseWriter, r *http.Request) {
 		case res := <-req.resp:
 			if (res.err == nil) {
 				w.WriteHeader(http.StatusOK)
-				b, err := json.Marshal(v)
+				b, err := v.serilize()
 				if (err == nil) {
 					w.Write(b)
 				} else {

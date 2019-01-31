@@ -160,7 +160,7 @@ func Test015(t *testing.T) {
 	var s State
 	s.Set(Unknown, Admins)
 	for ns := Claim; ns <= Hours48; ns++ {
-		_, err := s.Next(ns, EndUser)
+		_, err := s.Next(ns, EndUser,Nothing)
 		fmt.Print(err)
 		if (err == nil) {
 			fmt.Print(ns.Name())
@@ -174,11 +174,11 @@ func Test016(t *testing.T) {
 	var s State
 	s.Set(Terminated, Admins)
 	for ns := Claim; ns <= Hours48; ns++ {
-		_, err := s.Next(ns, EndUser)
+		_, err := s.Next(ns, EndUser,Nothing)
 		fmt.Print(err)
 		if (err == nil) {
 			fmt.Print(ns.Name())
-			t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Unknown)
+			t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Terminated)
 			break
 		}
 	}
@@ -188,12 +188,56 @@ func Test017(t *testing.T) {
 	var s State
 	s.Set(Service_mode, Admins)
 	for ns := Claim; ns <= Hours48; ns++ {
-		_, err := s.Next(ns, EndUser)
+		_, err := s.Next(ns, EndUser,Nothing)
 		fmt.Print(err)
 		if (err == nil) {
 			fmt.Print(ns.Name())
-			t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Unknown)
+			t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Service_mode)
 			break
 		}
+	}
+}
+
+func Test18(t *testing.T) {
+	var s State
+	s.Set(Battery_low, System)
+	fmt.Printf("*******************")
+	for ns := Claim; ns <=  Hours48; ns++ {
+		_, err := s.Next(ns, EndUser,Nothing)
+		if (err == nil ) {
+			fmt.Printf("**Battery low and %s  %s\n",ns.String(),"Battery_low")
+		}
+		fmt.Printf("%s",err)
+	}
+}
+
+func Test019(t *testing.T) {
+	var s State
+	s.Set(Bounty, Admins)
+	_, err := s.Next(Hunter, Hunters)
+	s.Print()
+	if (err != nil) {
+		t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Bounty)
+	}
+}
+
+func Test020(t *testing.T) {
+	var s State
+	s.Set(Collected, Admins)
+	_, err := s.Next(Hunter, Hunters)
+	s.Print()
+	if (err != nil) {
+		t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Bounty)
+	}
+}
+
+
+func Test021(t *testing.T) {
+	var s State
+	s.Set(Dropped, Admins)
+	_, err := s.Next(Hunter, Hunters)
+	s.Print()
+	if (err != nil) {
+		t.Errorf("Claim failed, got: %d, want: %d.", s.Get(), Bounty)
 	}
 }
