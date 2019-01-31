@@ -20,10 +20,8 @@ type Vehicle struct {
 }
 
 func (v *Vehicle) presist() {
-	v.RLock()
-	nv := *v
-	v.RUnlock()
-	app.store <- &nv
+	nv :=  v.clone()
+	app.store <- nv
 }
 
 func (v *Vehicle) clone() *Vehicle {
@@ -157,7 +155,7 @@ func (v *Vehicle) listen() {
 					res := &Response{vstate.Nothing, nil}
 					r.resp <- res
 					fmt.Print("Terminating event loop for Id: " + v.Uid + "in State: " + r.event.Name())
-					break
+					break  Loop
 				default:
 					doNothing()
 				}
