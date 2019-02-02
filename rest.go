@@ -221,6 +221,7 @@ func claimDisClaimVehicle(w http.ResponseWriter, r *http.Request) {
 	id := args["id"]
 	v, ok := app.garage.getVehicleById(id)
 	if (ok) {
+		fmt.Printf("id:  %s Event: %s Role: %s \n",id,event,role.String())
 		req := &Request{event, role, vstate.Nothing, make(chan *Response)}
 		v.Port <- req
 		select {
@@ -246,6 +247,7 @@ func claimDisClaimVehicle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
+		fmt.Printf("id: %s not found\n",id)
 		w.WriteHeader(http.StatusNotFound)
 		w.Write(out("NotFound...", 2))
 	}

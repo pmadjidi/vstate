@@ -10,7 +10,6 @@ import (
 
 func ValidState(s string) (State,bool) {
 	for i := Ready; i <= Nothing; i++  {
-		fmt.Printf("%s,%s\n",i.String(),s)
 		if i.String() == s  {
 			return i,true
 		}

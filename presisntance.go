@@ -5,6 +5,7 @@ import (
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
+	"os"
 	"vehicles/vstate"
 )
 
@@ -18,6 +19,7 @@ func createdb(filepath string) {
 	if app.DB == nil {
 		panic("Failed to create database")
 	}
+	createTable()
 }
 
 func createTable() {
@@ -41,8 +43,10 @@ func createTable() {
 }
 
 func clearTable() {
-	app.DB.Exec("DELETE FROM vehicles")
-	app.DB.Exec("ALTER SEQUENCE vehicles_id_seq RESTART WITH 1")
+	_, err := app.DB.Exec("DELETE FROM vehicles")
+	if (err != nil) {
+		panic(err)
+	}
 }
 
 func SaveVehicle(v *Vehicle) {
@@ -52,7 +56,7 @@ func SaveVehicle(v *Vehicle) {
 		log.Print(err.Error())
 		return
 	} else {
-		_, err := statement.Exec(v.Uid,v.State,v.Battery,v.CreatedAt,v.UpdatedAt)
+		_, err := statement.Exec(v.Uid, v.State, v.Battery, v.CreatedAt, v.UpdatedAt)
 		if (err != nil) {
 			log.Print(err.Error())
 			panic("could not save vehicle to database...")
@@ -104,10 +108,34 @@ func RestoreVehiclesFromDB() {
 	rows.Close()
 }
 
+func createTestDatabase() {
+	NewVehicle("1GcsahF1mmbeX2y4uCgf96HISba")
+	NewVehicle("1GcsahF1mmbeX2y4uCgf96HISbb")
+	NewVehicle("1GcsahF1mmbeX2y4uCgf96HISbc")
+	NewVehicle("1GcsahF1mmbeX2y4uCgf96HISbd")
+	NewVehicle("1GcsahF1mmbeX2y4uCgf96HISbe")
+	NewVehicle("1GcsahF1mmbeX2y4uCgf96HISbf")
+}
+
+func initDb() {
+	mode := os.Getenv("APPMODE")
+	fmt.Printf("APPMODE is set to %s \n", mode)
+	if mode == "TEST" {
+		fmt.Print("Configuring for TEST mode...\n")
+		createdb("./v-test.db")
+		clearTable()
+		createTestDatabase()
+	} else {
+		fmt.Print("Configuring for PRODUCTION mode...\n")
+		createdb("./v.db")
+		createTable()
+	}
+
+}
+
 func init() {
 	fmt.Print("Configuring the database...\n")
-	createdb("./v.db")
-	createTable()
+	initDb()
 	RestoreVehiclesFromDB()
 	go func() {
 		<-app.start

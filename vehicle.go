@@ -20,7 +20,7 @@ type Vehicle struct {
 }
 
 func (v *Vehicle) presist() {
-	nv :=  v.clone()
+	nv := v.clone()
 	app.store <- nv
 }
 
@@ -133,9 +133,9 @@ func (v *Vehicle) Event(ev vstate.Event, r vstate.URoles, s vstate.State) (vstat
 	ns, err := v.Next(ev, r, s)
 	if (err == nil) {
 		v.State = ns
-		return ns, err
+		return ns, nil
 	} else {
-		fmt.Printf("Event:, Next retuns Error in error %s %s %s\n",ev.String(), v.State.String(), ns.String())
+		fmt.Printf("Event:, Next retuns Error in error %s %s %s\n", ev.String(), v.State.String(), ns.String())
 		return v.State, err
 	}
 
@@ -145,7 +145,9 @@ func doNothing() {}
 
 func (v *Vehicle) listen() {
 	go func() {
+		fmt.Printf("Vehicle %s, wating to start event loop...\n",v.Uid)
 		<-app.start
+		fmt.Printf("Vehicle %s, Start event loop...\n",v.Uid)
 	Loop:
 		for {
 			select {
@@ -155,18 +157,17 @@ func (v *Vehicle) listen() {
 					res := &Response{vstate.Nothing, nil}
 					r.resp <- res
 					fmt.Print("Terminating event loop for Id: " + v.Uid + "in State: " + r.event.Name())
-					break  Loop
+					break Loop
 				default:
-					doNothing()
-				}
-				_, err := v.Event(r.event, r.userRole, r.state)
-				if (err != nil) {
-					fmt.Print("Error: ", v.Id, err)
-					res := &Response{v.getState(), err}
-					r.resp <- res
-				} else {
-					res := &Response{v.getState(), nil}
-					r.resp <- res
+					_, err := v.Event(r.event, r.userRole, r.state)
+					if (err != nil) {
+						fmt.Print("Error: ", v.Id, err)
+						res := &Response{v.getState(), err}
+						r.resp <- res
+					} else {
+						res := &Response{v.getState(), nil}
+						r.resp <- res
+					}
 				}
 
 			case <-time.After(10 * time.Second):
@@ -178,7 +179,7 @@ func (v *Vehicle) listen() {
 						fmt.Printf("\n%s %s %s\n", v.Uid, v.String(), err)
 					}
 				}
-				if charge >= 19  && v.getState() == vstate.Riding {
+				if charge >= 19 && v.getState() == vstate.Riding {
 					v.setChargeLevel(charge - 15)
 				}
 
@@ -190,10 +191,17 @@ func (v *Vehicle) listen() {
 	}()
 }
 
-func NewVehicle() *Vehicle {
+func NewVehicle(id ... string) *Vehicle {
 	t := time.Now().UnixNano()
-	v := Vehicle{State: vstate.Ready, Uid: uniqueId(), Port: make(chan *Request), Battery: 100,
+	var Uid string
+	if len(id) > 0 {
+		Uid = id[0]
+	} else {
+	Uid = uniqueId()
+	}
+	v := Vehicle{State: vstate.Ready, Uid: Uid, Port: make(chan *Request), Battery: 100,
 		CreatedAt: t, UpdatedAt: t}
+	app.garage.Set(Uid,&v)
 	app.store <- &v
 	v.listen()
 	return &v
