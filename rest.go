@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 	"vehicles/vstate"
+     "github.com/swaggo/http-swagger"
+	_"vehicles/docs"
 )
 
 func (a *App) initializeRoutes() {
@@ -26,6 +28,8 @@ func (a *App) initializeRoutes() {
 
 	a.Router.HandleFunc("/user/claim/{id:[0-9A-Za-z]+}", claimDisClaimVehicle).Methods("GET")
 	a.Router.HandleFunc("/user/disclaim/{id:[0-9A-Za-z]+}", claimDisClaimVehicle).Methods("GET")
+	a.Router.HandleFunc("/swagger/*", httpSwagger.WrapHandler)
+
 
 }
 

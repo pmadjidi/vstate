@@ -119,8 +119,8 @@ func createTestDatabase() {
 
 func initDb() {
 	mode := os.Getenv("APPMODE")
-	fmt.Printf("APPMODE is set to %s \n", mode)
 	if mode == "TEST" {
+		fmt.Printf("APPMODE is set to %s \n", mode)
 		fmt.Print("Configuring for TEST mode...\n")
 		createdb("./v-test.db")
 		clearTable()

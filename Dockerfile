@@ -5,5 +5,5 @@ ENV SRC_DIR=/go/src/vehicles
 ADD . $SRC_DIR
 # Build it:
 RUN sh -c 'cd $SRC_DIR;go get . ; go test; go build -o vehicle; cp vehicle /app/'
-EXPOSE 8080
+EXPOSE 8000
 ENTRYPOINT ["./vehicle"]
