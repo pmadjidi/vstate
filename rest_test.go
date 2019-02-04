@@ -84,7 +84,7 @@ func Test002(t *testing.T) {
 			assert.Equal(t, tt.expect, resp.StatusCode, "OK response is expected")
 			var v Vehicle
 			json.NewDecoder(resp.Body).Decode(&v)
-			assert.Equal(t,v.State,tt.state,"Veachle should be in state ready")
+			assert.Equal(t,v.State,tt.state,"Veachle should be in state riding")
 		})
 	}
 }
@@ -109,9 +109,9 @@ func Test003(t *testing.T) {
 		expect int
 		state vstate.State
 	}{   // allready claimed
-		{name: "1: testing claim user", req: newreq("GET", ts.URL+"/user/claim/1GcsahF1mmbeX2y4uCgf96HISba" , nil),expect: 403,state: vstate.Nothing},
-		{name: "2: testing claim admin", req: newreq("GET", ts.URL+"/admin/claim/1GcsahF1mmbeX2y4uCgf96HISbb", nil),expect:403,state: vstate.Nothing},
-		{name: "3: testing claim hunter", req: newreq("GET", ts.URL+"/hunter/claim/1GcsahF1mmbeX2y4uCgf96HISbc", nil),expect:403,state: vstate.Nothing},
+		{name: "1: testing claim user", req: newreq("GET", ts.URL+"/user/claim/1GcsahF1mmbeX2y4uCgf96HISba" , nil),expect: http.StatusForbidden,state: vstate.Nothing},
+		{name: "2: testing claim admin", req: newreq("GET", ts.URL+"/admin/claim/1GcsahF1mmbeX2y4uCgf96HISbb", nil),expect: http.StatusForbidden,state: vstate.Nothing},
+		{name: "3: testing claim hunter", req: newreq("GET", ts.URL+"/hunter/claim/1GcsahF1mmbeX2y4uCgf96HISbc", nil),expect: http.StatusForbidden,state: vstate.Nothing},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

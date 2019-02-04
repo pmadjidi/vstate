@@ -3,19 +3,37 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/gorilla/mux"
+	"github.com/swaggo/http-swagger"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
+	_ "vehicles/docs"
 	"vehicles/vstate"
-     "github.com/swaggo/http-swagger"
-	_"vehicles/docs"
 )
 
+
+
+func (a *App) jwtHandler(f func(w http.ResponseWriter,r *http.Request)) http.HandlerFunc  {
+	return func(w http.ResponseWriter,r *http.Request) {
+		// user := context.Get(r, "user")
+		//fmt.Fprintf(w, "This is an authenticated request")
+		//fmt.Fprintf(w, "Claim content:\n")
+		/*
+		for k, v := range user.(*jwt.Token).Claims {
+			fmt.Fprintf(w, "%s :\t%#v\n", k, v)
+		}
+		*/
+		f(w,r)
+	}
+}
+
 func (a *App) initializeRoutes() {
+
 	a.Router.HandleFunc("/admin/newv", createVehicle).Methods("GET")
-	a.Router.HandleFunc("/admin/listv", listVehicle).Methods("GET")
+	a.Router.HandleFunc("/admin/listv", a.jwtHandler(listVehicle)).Methods("GET")
 	a.Router.HandleFunc("/admin/claim/{id:[0-9A-Za-z]+}", claimDisClaimVehicle).Methods("GET")
 	a.Router.HandleFunc("/admin/disclaim/{id:[0-9A-Za-z]+}", claimDisClaimVehicle).Methods("GET")
 	a.Router.HandleFunc("/admin/setstate/{id:[0-9A-Za-z]+}/{state:[a-zA-z]+}", setState).Methods("Get")
@@ -31,8 +49,9 @@ func (a *App) initializeRoutes() {
 	//a.Router.HandleFunc("/swagger/*", httpSwagger.WrapHandler)
 	a.Router.PathPrefix("/doc/").Handler(httpSwagger.WrapHandler)
 
-
 }
+
+
 
 func  createVehicle(w http.ResponseWriter, r *http.Request) {
 	v := NewVehicle()
@@ -40,9 +59,8 @@ func  createVehicle(w http.ResponseWriter, r *http.Request) {
 	b, err := v.serilize()
 	if (err != nil) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(out("Error...", 2))
+		Respond(w,http.StatusInternalServerError,"Error....")
 	}
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(b)
 }
@@ -52,17 +70,13 @@ func deleteVehicle(w http.ResponseWriter, r *http.Request) {
 	id := args["id"]
 	v, ok := app.garage.getVehicleById(id)
 	if (!ok) {
-		w.Header().Set("Content-Type", "application/text")
-		w.WriteHeader(http.StatusNotFound)
-		w.Write(out("NotFound", 2))
-		return
+		Respond(w,http.StatusNotFound,"NotFound....")
 	} else {
 		req := &Request{vstate.Delete, vstate.Admins, vstate.Nothing, make(chan *Response)}
 		v.Port <- req
 		_ = <-req.resp
 		v.delete()
-		w.WriteHeader(http.StatusOK)
-		w.Write(out("Deleted", 2))
+		Respond(w,http.StatusOK,"Deleted....")
 		return
 	}
 }
@@ -72,10 +86,7 @@ func huntVehicle(w http.ResponseWriter, r *http.Request) {
 	id := args["id"]
 	v, ok := app.garage.getVehicleById(id)
 	if (!ok) {
-		w.Header().Set("Content-Type", "application/text")
-		w.WriteHeader(http.StatusNotFound)
-		w.Write(out("NotFound", 2))
-		return
+		Respond(w,http.StatusNotFound, "NotFound....")
 	} else {
 		req := &Request{vstate.Hunter, vstate.Hunters, vstate.Nothing, make(chan *Response)}
 		v.Port <- req
@@ -88,32 +99,21 @@ func huntVehicle(w http.ResponseWriter, r *http.Request) {
 				if (err == nil) {
 					w.Write(b)
 				} else {
-					w.WriteHeader(http.StatusExpectationFailed)
-					w.Write(out(res.err.Error(), 2))
-					return
+					Respond(w,http.StatusExpectationFailed, "No data....")
 				}
 			} else {
-				w.WriteHeader(http.StatusForbidden)
-				w.Write([]byte(wraphtml(res.err.Error(), 1)))
-				return
+				Respond(w,http.StatusForbidden, res.err.Error())
 			}
 		case <-time.After(5 * time.Second):
-			w.WriteHeader(http.StatusRequestTimeout)
-			w.Write(out("Timeout...", 2))
-			return
+			Respond(w,http.StatusRequestTimeout, "Timeout....")
 		}
-
-		w.WriteHeader(http.StatusOK)
-		w.Write(out("Deleted", 2))
-		return
 	}
 }
 
 func listVehicle(w http.ResponseWriter, r *http.Request) {
 	b, err := json.Marshal(app.garage.getMap())
 	if (err != nil) {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(out("Error...", 2))
+		Respond(w,http.StatusInternalServerError,"Error....")
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -132,7 +132,7 @@ func setState(w http.ResponseWriter, r *http.Request) {
 	st, ok := vstate.ValidState(stateName)
 	if !ok {
 		w.WriteHeader(http.StatusNotAcceptable)
-		w.Write(out("NotFound...", 2))
+		Respond(w,http.StatusNotAcceptable,"State not acceptable....")
 	} else {
 		fmt.Printf("setGetState: Got state %s\n", st.String())
 		v, ok := app.garage.getVehicleById(id)
@@ -147,23 +147,16 @@ func setState(w http.ResponseWriter, r *http.Request) {
 					if (err == nil) {
 						w.Write(b)
 					} else {
-						w.WriteHeader(http.StatusExpectationFailed)
-						w.Write(out(res.err.Error(), 2))
-						return
+						Respond(w,http.StatusExpectationFailed,res.err.Error())
 					}
 				} else {
-					w.WriteHeader(http.StatusForbidden)
-					w.Write([]byte(wraphtml(res.err.Error(), 1)))
-					return
+					Respond(w,http.StatusForbidden,res.err.Error())
 				}
 			case <-time.After(5 * time.Second):
-				w.WriteHeader(http.StatusRequestTimeout)
-				w.Write(out("Timeout...", 2))
-				return
+				Respond(w,http.StatusRequestTimeout,"Timeout....")
 			}
 		} else {
-			w.WriteHeader(http.StatusNotFound)
-			w.Write(out("NotFound", 2))
+			Respond(w,http.StatusNotFound,"NotFound....")
 		}
 	}
 }
@@ -181,13 +174,11 @@ func getState(w http.ResponseWriter, r *http.Request) {
 		if (err == nil) {
 			w.Write(b)
 		} else {
-			w.WriteHeader(http.StatusOK)
-			w.Write(out("OK, but not content...", 2))
-			return
+			Respond(w,http.StatusExpectationFailed,"No data....")
 		}
 	} else {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write(out("NotFound", 2))
+		Respond(w,http.StatusNotFound,"Not Found")
 	}
 }
 
@@ -206,9 +197,7 @@ func claimDisClaimVehicle(w http.ResponseWriter, r *http.Request) {
 	case "user":
 		role = vstate.EndUser
 	default:
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(wraphtml("Forbidden...", 1)))
-		return
+		Respond(w,http.StatusForbidden,"Forbidden....")
 	}
 
 	switch eventName {
@@ -217,9 +206,7 @@ func claimDisClaimVehicle(w http.ResponseWriter, r *http.Request) {
 	case "disclaim":
 		event = vstate.DisClaim
 	default:
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(wraphtml("Forbidden...", 1)))
-		return
+		Respond(w,http.StatusForbidden,"Forbidden....")
 	}
 
 	args := mux.Vars(r)
@@ -237,24 +224,16 @@ func claimDisClaimVehicle(w http.ResponseWriter, r *http.Request) {
 				if (err == nil) {
 					w.Write(b)
 				} else {
-					w.WriteHeader(http.StatusOK)
-					w.Write(out("OK, but not content...", 2))
-					return
+					Respond(w,http.StatusExpectationFailed,"No data....")
 				}
 			} else {
-				w.WriteHeader(http.StatusForbidden)
-				w.Write([]byte(wraphtml(res.err.Error(), 1)))
-				return
+				Respond(w,http.StatusForbidden,res.err.Error())
 			}
 		case <-time.After(5 * time.Second):
-			w.WriteHeader(http.StatusRequestTimeout)
-			w.Write(out("TimeOut...", 2))
-			return
+			Respond(w,http.StatusRequestTimeout,"Timeout....")
 		}
 	} else {
-		fmt.Printf("id: %s not found\n",id)
-		w.WriteHeader(http.StatusNotFound)
-		w.Write(out("NotFound...", 2))
+		Respond(w,http.StatusNotFound,"NotFound....")
 	}
 }
 

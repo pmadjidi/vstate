@@ -13,11 +13,11 @@ func createdb(filepath string) {
 	var err error
 	app.DB, err = sql.Open("sqlite3", filepath)
 	if err != nil {
-		log.Fatal("Can not allocate database on disk")
+		log.Fatal("Can not allocate database on disk\n")
 		panic(err)
 	}
 	if app.DB == nil {
-		panic("Failed to create database")
+		panic("Failed to create database\n")
 	}
 	createTable()
 }
@@ -37,7 +37,7 @@ func createTable() {
 
 	_, err := app.DB.Exec(sql_table)
 	if err != nil {
-		log.Fatal("Can not create table")
+		log.Fatal("Can not create table\n")
 		panic(err)
 	}
 }
@@ -72,7 +72,7 @@ func DeleteVehicle(v *VehicleEntity) {
 	} else {
 		_, err := statement.Exec(v.uid())
 		if (err != nil) {
-			panic("could not delete the vehicle from database...")
+			panic("could not delete the vehicle from database...\n")
 		}
 	}
 }
@@ -109,6 +109,7 @@ func RestoreVehiclesFromDB() {
 }
 
 func createTestDatabase() {
+	fmt.Printf("Creating test vechiacles in test database.....\n")
 	NewVehicle("1GcsahF1mmbeX2y4uCgf96HISba")
 	NewVehicle("1GcsahF1mmbeX2y4uCgf96HISbb")
 	NewVehicle("1GcsahF1mmbeX2y4uCgf96HISbc")
