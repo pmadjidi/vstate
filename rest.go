@@ -28,7 +28,8 @@ func (a *App) initializeRoutes() {
 
 	a.Router.HandleFunc("/user/claim/{id:[0-9A-Za-z]+}", claimDisClaimVehicle).Methods("GET")
 	a.Router.HandleFunc("/user/disclaim/{id:[0-9A-Za-z]+}", claimDisClaimVehicle).Methods("GET")
-	a.Router.HandleFunc("/swagger/*", httpSwagger.WrapHandler)
+	//a.Router.HandleFunc("/swagger/*", httpSwagger.WrapHandler)
+	a.Router.PathPrefix("/doc/").Handler(httpSwagger.WrapHandler)
 
 
 }
@@ -59,7 +60,7 @@ func deleteVehicle(w http.ResponseWriter, r *http.Request) {
 		req := &Request{vstate.Delete, vstate.Admins, vstate.Nothing, make(chan *Response)}
 		v.Port <- req
 		_ = <-req.resp
-		app.delete <- v
+		v.delete()
 		w.WriteHeader(http.StatusOK)
 		w.Write(out("Deleted", 2))
 		return

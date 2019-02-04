@@ -14,8 +14,8 @@ type App struct {
 	wg    *sync.WaitGroup
 	quit  chan interface{}
 	start chan interface{}
-	store chan *Vehicle
-	delete chan *Vehicle
+	store chan *VehicleEntity
+	delete chan *VehicleEntity
 	Router *mux.Router
 	garage *Garage
 }
@@ -23,8 +23,8 @@ type App struct {
 var app = App{wg: &sync.WaitGroup{},
 	start: make(chan interface{}),
 	quit:  make(chan interface{}),
-	store: make(chan *Vehicle,100),
-	delete: make(chan *Vehicle,100),
+	store: make(chan *VehicleEntity,100),
+	delete: make(chan *VehicleEntity,100),
 	port:  ":8080",
     garage: NewGarage(),
 	Router: mux.NewRouter()}

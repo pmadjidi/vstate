@@ -19,10 +19,25 @@ type Vehicle struct {
 	UpdatedAt    int64         `json:"updatedAt"`
 }
 
-func (v *Vehicle) presist() {
-	nv := v.clone()
-	app.store <- nv
+
+
+
+func (v *Vehicle) presist () {
+	v.RLock()
+	defer v.RUnlock()
+	app.store <- & VehicleEntity{v.State,v.Id,v.Uid,v.Battery,v.CreatedAt,v.CreatedAt}
 }
+
+
+func (v *Vehicle) delete() {
+	v.RLock()
+	defer v.RUnlock()
+	app.delete <- & VehicleEntity{v.State,v.Id,v.Uid,v.Battery,v.CreatedAt,v.CreatedAt}
+}
+
+
+
+
 
 func (v *Vehicle) clone() *Vehicle {
 	v.RLock()
@@ -202,7 +217,7 @@ func NewVehicle(id ... string) *Vehicle {
 	v := Vehicle{State: vstate.Ready, Uid: Uid, Port: make(chan *Request), Battery: 100,
 		CreatedAt: t, UpdatedAt: t}
 	app.garage.Set(Uid,&v)
-	app.store <- &v
+	v.presist()
 	v.listen()
 	return &v
 }

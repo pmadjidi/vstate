@@ -49,7 +49,7 @@ func clearTable() {
 	}
 }
 
-func SaveVehicle(v *Vehicle) {
+func SaveVehicle(v *VehicleEntity) {
 
 	statement, err := app.DB.Prepare("INSERT OR REPLACE INTO vehicles (Uid,State, Battery,CreatedAt,UpdatedAt) VALUES (?,?,?,?,?)")
 	if (err != nil) {
@@ -64,13 +64,13 @@ func SaveVehicle(v *Vehicle) {
 	}
 }
 
-func DeleteVehicle(v *Vehicle) {
+func DeleteVehicle(v *VehicleEntity) {
 	statement, err := app.DB.Prepare("DELETE  FROM vehicles where Uid = (Uid) VALUES (?)")
 	if (err != nil) {
 		log.Print(".............." + err.Error())
 		return
 	} else {
-		_, err := statement.Exec(v.getUid())
+		_, err := statement.Exec(v.uid())
 		if (err != nil) {
 			panic("could not delete the vehicle from database...")
 		}
